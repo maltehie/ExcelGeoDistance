@@ -1,2 +1,2 @@
 # ExcelGeoDistance
- Function for excel for calculating the driving distance between two adrresses 
+ Custom MS Excel function for calculating the driving distance between two adrresses 
