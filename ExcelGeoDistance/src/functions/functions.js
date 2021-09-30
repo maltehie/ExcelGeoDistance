@@ -1,64 +1,72 @@
 ﻿/**
- * Add two numbers
- * @customfunction 
- * @param {number} first First number
- * @param {number} second Second number
- * @returns {number} The sum of the two numbers.
+ * Calculate the road distance between two addresses
+ * @customfunction
+ * @param {string} originAddress 
+ * @param {string} destinationAddress 
+ * @returns {string} Road distance between the two addresses in m.
  */
-function add(first, second) {
-  return first + second;
+async function dist(originAddress, destinationAddress){
+  return await calculateDistance(originAddress, destinationAddress);
+} 
+
+async function calculateDistance(originAddress, destinationAddress){
+
+  var origCoordinates = await resolveAddress(originAddress);
+  var destCoordinates = await resolveAddress(destinationAddress);
+  var resposeJson;
+
+  var request = new XMLHttpRequest();
+
+  request.open('GET', 'https://api.openrouteservice.org/v2/directions/driving-car?api_key=5b3ce3597851110001cf6248c3fca60771b847e28d85e326d947320a&start='+
+  origCoordinates[0]+','+origCoordinates[1]+
+  '&end='+destCoordinates[0]+','+destCoordinates[1]);
+  
+  
+request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+request.send();
+
+return new Promise(resolve => {
+request.onreadystatechange = function () {
+  if (this.readyState === 4) {
+    console.log('Status:', this.status);
+    //console.log('Headers:', this.getAllResponseHeaders());
+    //console.log('Body:', this.responseText);
+    
+    responseJson = JSON.parse(this.responseText);
+    var dist = responseJson.features[0].properties.segments[0].distance;
+    console.log('Distance: ', dist);
+    resolve(dist);
+  }
+};
+});
 }
 
-/**
- * Displays the current time once a second
- * @customfunction 
- * @param {CustomFunctions.StreamingInvocation<string>} invocation Custom function invocation
- */
-function clock(invocation) {
-  const timer = setInterval(() => {
-    const time = currentTime();
-    invocation.setResult(time);
-  }, 1000);
+function resolveAddress(address){
+  
+  address = address.replace(/ /g, '%20');
+  var responseJson;
+  
+  var request = new XMLHttpRequest();
 
-  invocation.onCanceled = () => {
-    clearInterval(timer);
+  request.open('GET', 'https://api.openrouteservice.org/geocode/search?api_key=5b3ce3597851110001cf6248c3fca60771b847e28d85e326d947320a&text='+address+'&layers=address');
+
+  request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+  
+    
+  request.send();
+
+return new Promise(resolve => {
+  request.onreadystatechange = function () {
+    if (this.readyState === 4) {
+     console.log('Status:', this.status);
+     //console.log('Headers:', this.getAllResponseHeaders());
+     //console.log('Body:', this.responseText);
+     responseJson = JSON.parse(this.responseText);
+     
+     var coo = responseJson.features[0].geometry.coordinates;
+     console.log('Coordinates: ', coo);
+     resolve(coo);
+   }
   };
-}
-
-/**
- * Returns the current time
- * @returns {string} String with the current time formatted for the current locale.
- */
-function currentTime() {
-  return new Date().toLocaleTimeString();
-}
-
-/**
- * Increments a value once a second.
- * @customfunction 
- * @param {number} incrementBy Amount to increment
- * @param {CustomFunctions.StreamingInvocation<number>} invocation
- */
-function increment(incrementBy, invocation) {
-  let result = 0;
-  const timer = setInterval(() => {
-    result += incrementBy;
-    invocation.setResult(result);
-  }, 1000);
-
-  invocation.onCanceled = () => {
-    clearInterval(timer);
-  };
-}
-
-/**
- * Writes a message to console.log().
- * @customfunction LOG
- * @param {string} message String to write.
- * @returns String to write.
- */
-function logMessage(message) {
-  console.log(message);
-
-  return message;
+  });
 }
